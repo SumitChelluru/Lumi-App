@@ -333,9 +333,12 @@ let outUrl='';
 $('exp').onclick=()=>{if(!IMG)return;const gl=main.gl,L=Math.min(4096,gl.getParameter(gl.MAX_TEXTURE_SIZE)),g=geom(false),[w,h]=dims(g.oa,L);
 main.img(canvasOf(IMG,L));main.draw(S,w,h,g);outUrl=$('cv').toDataURL('image/jpeg',.92);main.img(PREV);$('oimg').src=outUrl;$('ov').classList.add('show');queue()};
 $('close').onclick=()=>$('ov').classList.remove('show');
-$('save').onclick=async()=>{const n='Lumi-'+Date.now()+'.jpg',C=window.Capacitor,LS=C&&C.registerPlugin&&C.registerPlugin('LumiSave');
-try{if(LS&&C.isNativePlatform&&C.isNativePlatform()){await LS.save({data:outUrl.split(',')[1],name:n});toast('Saved to Pictures/Lumi');return}
-const a=document.createElement('a');a.href=outUrl;a.download=n;document.body.appendChild(a);a.click();a.remove();toast('Saved to your downloads')}catch(e){showErr('Save failed: '+(e&&e.message||e))}};
+$('save').onclick=async()=>{const n='Lumi-'+Date.now()+'.jpg',b64=outUrl.split(',')[1],C=window.Capacitor,P=(C&&C.Plugins)||{},native=!!(window.androidBridge||(C&&C.getPlatform&&C.getPlatform()!=='web'));let err;
+try{if(native){let LS=P.LumiSave;if(!LS&&C&&C.registerPlugin)LS=C.registerPlugin('LumiSave');
+if(LS){try{await LS.save({data:b64,name:n});toast('Saved to your gallery (Pictures/Lumi)');return}catch(e){err=e}}
+if(P.Filesystem){await P.Filesystem.writeFile({path:n,data:b64,directory:'DOCUMENTS'});toast('Gallery save failed ('+String(err&&err.message||'plugin missing').slice(0,70)+'). Saved to the Documents folder instead.');return}
+throw new Error('No save method available in this build')}
+const a=document.createElement('a');a.href=outUrl;a.download=n;document.body.appendChild(a);a.click();a.remove();toast('Browser download started. Check your Downloads folder.')}catch(e){showErr('Save failed: '+(e&&e.message||e))}};
 $('share').onclick=async()=>{const P=window.Capacitor&&window.Capacitor.Plugins;try{
 if(P&&P.Filesystem&&P.Share){const r=await P.Filesystem.writeFile({path:'lumi-'+Date.now()+'.jpg',data:outUrl.split(',')[1],directory:'CACHE'});await P.Share.share({url:r.uri});return}
 const bin=atob(outUrl.split(',')[1]),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);const f=new File([a],'lumi-edit.jpg',{type:'image/jpeg'});
